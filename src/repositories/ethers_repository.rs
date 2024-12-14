@@ -1,5 +1,5 @@
+use ethers::providers::{Provider, Ws};
 use std::collections::HashMap;
-use ethers::providers::{Provider,Ws};
 pub struct Connections {
     connections: HashMap<i32, Provider<Ws>>
 }

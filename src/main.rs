@@ -1,17 +1,26 @@
-mod services;
+mod controllers;
 mod repositories;
+mod services;
 
-use crate::services::ethers::apply_rpc::apply_rpc;
-use crate::services::go_plus::GoPlusService;
-use crate::services::http_client::HttpClient;
+use crate::controllers::ethers_controller::ethers_routers;
+use actix_web::{App, HttpServer};
 
-#[tokio::main]
-async fn main() -> Result<(), reqwest::Error> {
-    let http_client = HttpClient::new();
-    let go_plus_service = GoPlusService::new(http_client);
-    let result = go_plus_service
-        .get_token_security("0x17837004ea685690b32dbead02a274ec4333a26a", 1)
-        .await?;
-    println!("GoPlus Response: {:?}", result);
-    Ok(())
+#[actix_web::main]
+async fn main() {
+
+    HttpServer::new(move || {
+        let ethers_routers = ethers_routers();
+        let mut app = App::new();
+
+        for (endpoint, route) in ethers_routers {
+            app = app.route(&endpoint, route);
+        }
+
+        app
+    })
+    .bind("127.0.0.1:8080")
+    .expect("ERR")
+    .run()
+    .await
+    .expect("TODO: panic message");
 }
