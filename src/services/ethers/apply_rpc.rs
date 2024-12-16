@@ -1,10 +1,9 @@
-use std::sync::{Arc, RwLock};
-use actix_web::web;
 use crate::repositories::ethers_repository::EthersRepository;
 use crate::repositories::redis_repository::RedisRepository;
 use ethers::prelude::{Provider, Ws};
 use ethers::providers::Middleware;
 use redis::AsyncCommands;
+use std::sync::{Arc, RwLock};
 
 pub struct ApplyRpcService {
     repository:Arc<RwLock<EthersRepository>>,

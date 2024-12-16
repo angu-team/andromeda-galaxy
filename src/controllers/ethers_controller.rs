@@ -1,11 +1,8 @@
-use crate::repositories::ethers_repository::EthersRepository;
-use crate::repositories::redis_repository::RedisRepository;
 use crate::services::ethers::apply_rpc::ApplyRpcService;
-use actix_web::{web, HttpResponse, HttpResponseBuilder, Responder, Route};
+use actix_web::{web, HttpResponse, Responder, Route};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-use redis::AsyncCommands;
+use std::sync::Arc;
 
 pub struct EthersController;
 
