@@ -1,22 +1,22 @@
 use ethers::providers::{Provider, Ws};
 use std::collections::HashMap;
-pub struct Connections {
+pub struct EthersRepository {
     connections: HashMap<i32, Provider<Ws>>
 }
 
-impl Connections {
+impl EthersRepository {
 
     pub fn new() -> Self {
-        Connections {
+        EthersRepository {
             connections: HashMap::new()
         }
     }
 
-    pub fn add(&mut self, user_id:i32,provider:Provider<Ws>) {
+    pub fn apply_connection(&mut self, user_id:i32,provider:Provider<Ws>) {
         self.connections.insert(user_id,provider);
     }
 
-    pub fn get(&self, user_id:i32) -> Option<&Provider<Ws>> {
+    pub fn get_connection(&self, user_id:i32) -> Option<&Provider<Ws>> {
         self.connections.get(&user_id)
     }
 

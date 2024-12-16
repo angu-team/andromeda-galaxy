@@ -1,28 +1,40 @@
-use std::collections::HashMap;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder, Route};
+use crate::repositories::ethers_repository::EthersRepository;
+use crate::repositories::redis_repository::RedisRepository;
+use crate::services::ethers::apply_rpc::ApplyRpcService;
+use actix_web::{web, HttpResponse, HttpResponseBuilder, Responder, Route};
 use serde::Deserialize;
-use crate::services::ethers::apply_rpc::apply_rpc;
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
+use redis::AsyncCommands;
+
+pub struct EthersController;
 
 #[derive(Deserialize)]
 struct ApplyRpcCtrl {
     user_id: i32,
-    endpoint: String
+    endpoint: String,
 }
 
-async fn apply_rpc_ctrl(request: web::Json<ApplyRpcCtrl>) -> impl Responder {
-    let user_id = request.user_id;
-    let endpoint = request.endpoint.clone();
+impl EthersController {
+    pub fn new() -> Self {
+        EthersController {}
+    }
 
-    apply_rpc(user_id,endpoint).await;
-    HttpResponse::Ok()
-}
+    pub async fn apply_rpc_ctrl(
+        request: web::Json<ApplyRpcCtrl>,
+        service: web::Data<Arc<ApplyRpcService>>,
+    ) -> impl Responder {
+        let user_id = request.user_id;
+        let endpoint = request.endpoint.clone();
 
-pub fn ethers_routers() -> HashMap<String,Route>{
-    let mut routes = HashMap::new();
+        service.exec(user_id, endpoint).await;
+        HttpResponse::Ok()
+    }
 
-    routes.insert(
-        String::from("/"),web::post().to(apply_rpc_ctrl)
-    );
+    pub fn routes(self) -> HashMap<String, Route> {
+        let mut routes = HashMap::new();
 
-    routes
+        routes.insert(String::from("/"), web::post().to(Self::apply_rpc_ctrl));
+        routes
+    }
 }
