@@ -13,4 +13,5 @@ actix-web = "4.9.0"
 redis = "0.27.6"
 deadpool-redis = "0.18.0"
 futures = "0.3.31"
+dotenv = "0.15.0"
 
