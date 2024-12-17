@@ -10,6 +10,7 @@ use std::sync::{Arc, RwLock};
 
 use actix_web::{web, App, HttpServer};
 use redis::{Commands, FromRedisValue};
+use crate::services::ethers::get_logs_service::GetLogsService;
 
 #[actix_web::main]
 async fn main() {
@@ -24,7 +25,12 @@ async fn main() {
             redis_repository.clone(),
         ));
 
+        let get_logs_service = Arc::new(GetLogsService::new(
+            ethers_repository.clone()
+        ));
+
         app = app.app_data(web::Data::new(apply_rpc_service.clone()));
+        app = app.app_data(web::Data::new(get_logs_service.clone()));
 
         let ethers_controller = EthersController::new();
         for (endpoint, route) in ethers_controller.routes() {

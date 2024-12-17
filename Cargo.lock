@@ -265,6 +265,7 @@ dependencies = [
  "actix-web",
  "deadpool-redis",
  "ethers",
+ "futures",
  "redis",
  "reqwest 0.12.9",
  "serde",
