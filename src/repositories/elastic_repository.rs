@@ -1,6 +1,9 @@
-use elasticsearch::{Elasticsearch, Error as ElasticsearchError, IndexParts, SearchParts};
+use elasticsearch::{
+    BulkParts, Elasticsearch, Error as ElasticsearchError, IndexParts, SearchParts,
+};
+use ethers::prelude::Transaction;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::time::Duration;
 use thiserror::Error;
 
@@ -25,9 +28,9 @@ impl ElasticRepository {
                 })?,
             ),
         )
-            .timeout(Duration::from_secs(30))
-            .build()
-            .map_err(|e| ElasticRepositoryError::ConnectionError(ElasticsearchError::from(e)))?;
+        .timeout(Duration::from_secs(30))
+        .build()
+        .map_err(|e| ElasticRepositoryError::ConnectionError(ElasticsearchError::from(e)))?;
 
         let client = Elasticsearch::new(transport);
         Ok(Self { client })
@@ -64,6 +67,7 @@ impl ElasticRepository {
     ) -> Result<(), ElasticsearchError> {
         let _response = self
             .client
+            .clone()
             .index(IndexParts::Index(index))
             .body(document)
             .send()
@@ -71,10 +75,41 @@ impl ElasticRepository {
         Ok(())
     }
 
+    pub async fn index_bulk_documents<T: Serialize>(
+        &self,
+        index: &str,
+        documents: Vec<T>,
+    ) -> Result<(), ElasticsearchError> {
+        let mut bulk_body = Vec::new();
+
+        for doc in documents {
+            bulk_body.push(json!({
+                "index": {
+                    "_index": index,
+                }
+            }));
+
+            bulk_body.push(serde_json::to_value(doc)?);
+        }
+
+        self.client
+            .bulk(BulkParts::None)
+            .body(
+                bulk_body
+                    .into_iter()
+                    .map(|x| x.to_string().into_bytes())
+                    .collect::<Vec<_>>(),
+            )
+            .send()
+            .await?;
+
+        Ok(())
+    }
+
     /// Realiza uma busca no Elasticsearch.
     ///
     /// # Argumentos
-    ///
+    ///d
     /// * `index` - Nome do índice onde a busca será realizada
     /// * `query` - Query em formato JSON para a busca
     ///
