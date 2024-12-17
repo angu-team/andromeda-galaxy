@@ -1,21 +1,23 @@
-use std::future;
-use std::sync::{Arc, RwLock};
-use ethers::middleware::Middleware;
-use ethers::prelude::{Block, BlockNumber, ProviderError, Transaction};
-use ethers::types::BlockId;
-use tokio::task;
+use crate::repositories::elastic_repository::ElasticRepository;
 use crate::repositories::ethers_repository::EthersRepository;
+use ethers::middleware::Middleware;
+use ethers::prelude::BlockNumber;
+use ethers::types::BlockId;
 use futures::future::join_all;
+use std::sync::{Arc, RwLock};
+use tokio::task;
 
 pub struct GetLogsService {
-    repository: Arc<RwLock<EthersRepository>>
+    repository: Arc<RwLock<EthersRepository>>,
+    elastic_repository : Arc<RwLock<ElasticRepository>>
 }
 
 impl GetLogsService {
 
-    pub fn new(repository: Arc<RwLock<EthersRepository>>) -> Self{
+    pub fn new(repository: Arc<RwLock<EthersRepository>>,elastic_repository : Arc<RwLock<ElasticRepository>> ) -> Self{
         GetLogsService{
-            repository
+            repository,
+            elastic_repository
         }
     }
 

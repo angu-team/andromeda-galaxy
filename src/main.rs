@@ -5,7 +5,7 @@ mod services;
 use crate::controllers::ethers_controller::EthersController;
 use crate::repositories::ethers_repository::EthersRepository;
 use crate::repositories::redis_repository::RedisRepository;
-use crate::services::elasticsearch_service::ElasticsearchService;
+use crate::repositories::elastic_repository::ElasticRepository;
 use crate::services::ethers::apply_rpc_service::ApplyRpcService;
 
 use dotenv::dotenv;
@@ -22,6 +22,15 @@ async fn main() {
     HttpServer::new(move || {
         let mut app = App::new();
 
+        let elastic_repository = Arc::new(RwLock::new(
+            ElasticRepository::new(
+                env::var("ELASTICSEARCH_URI")
+                    .expect("ELASTICSEARCH_URI not set")
+                    .as_str(),
+            )
+            .expect("Falha ao criar ElasticsearchService"),
+        ));
+
         let redis_repository = Arc::new(RwLock::new(RedisRepository::connect()));
         let ethers_repository = Arc::new(RwLock::new(EthersRepository::new()));
 
@@ -30,20 +39,10 @@ async fn main() {
             redis_repository.clone(),
         ));
 
-        let elasticsearch_service = Arc::new(
-            ElasticsearchService::new(
-                env::var("ELASTICSEARCH_URI")
-                    .expect("ELASTICSEARCH_URI not set")
-                    .as_str(),
-            )
-            .expect("Falha ao criar ElasticsearchService"),
-        );
-
-        let get_logs_service = Arc::new(GetLogsService::new(ethers_repository.clone()));
+        let get_logs_service = Arc::new(GetLogsService::new(ethers_repository.clone(),elastic_repository.clone()));
 
         app = app.app_data(web::Data::new(apply_rpc_service.clone()));
         app = app.app_data(web::Data::new(get_logs_service.clone()));
-        app = app.app_data(web::Data::new(elasticsearch_service.clone()));
 
         let ethers_controller = EthersController::new();
         for (endpoint, route) in ethers_controller.routes() {

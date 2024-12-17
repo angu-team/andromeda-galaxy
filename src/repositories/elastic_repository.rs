@@ -5,29 +5,29 @@ use std::time::Duration;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum ElasticsearchServiceError {
+pub enum ElasticRepositoryError {
     #[error("Erro de conexão com Elasticsearch: {0}")]
     ConnectionError(#[from] ElasticsearchError),
     #[error("Erro ao processar resposta: {0}")]
     ResponseError(String),
 }
 
-pub struct ElasticsearchService {
+pub struct ElasticRepository {
     client: Elasticsearch,
 }
 
-impl ElasticsearchService {
-    pub fn new(elasticsearch_url: &str) -> Result<Self, ElasticsearchServiceError> {
+impl ElasticRepository {
+    pub fn new(elasticsearch_url: &str) -> Result<Self, ElasticRepositoryError> {
         let transport = elasticsearch::http::transport::TransportBuilder::new(
             elasticsearch::http::transport::SingleNodeConnectionPool::new(
                 elasticsearch_url.parse().map_err(|e| {
-                    ElasticsearchServiceError::ConnectionError(ElasticsearchError::from(e))
+                    ElasticRepositoryError::ConnectionError(ElasticsearchError::from(e))
                 })?,
             ),
         )
-        .timeout(Duration::from_secs(30))
-        .build()
-        .map_err(|e| ElasticsearchServiceError::ConnectionError(ElasticsearchError::from(e)))?;
+            .timeout(Duration::from_secs(30))
+            .build()
+            .map_err(|e| ElasticRepositoryError::ConnectionError(ElasticsearchError::from(e)))?;
 
         let client = Elasticsearch::new(transport);
         Ok(Self { client })
@@ -118,7 +118,7 @@ impl ElasticsearchService {
         &self,
         index: &str,
         query: &Value,
-    ) -> Result<Vec<T>, ElasticsearchServiceError> {
+    ) -> Result<Vec<T>, ElasticRepositoryError> {
         let response = self
             .client
             .search(SearchParts::Index(&[index]))
@@ -128,7 +128,7 @@ impl ElasticsearchService {
 
         let status = response.status_code();
         if !status.is_success() {
-            return Err(ElasticsearchServiceError::ResponseError(format!(
+            return Err(ElasticRepositoryError::ResponseError(format!(
                 "Falha na busca. Status: {}",
                 status
             )));
@@ -139,7 +139,7 @@ impl ElasticsearchService {
         let hits = response_body["hits"]["hits"]
             .as_array()
             .ok_or_else(|| {
-                ElasticsearchServiceError::ResponseError(
+                ElasticRepositoryError::ResponseError(
                     "Resposta inválida do Elasticsearch".to_string(),
                 )
             })?
