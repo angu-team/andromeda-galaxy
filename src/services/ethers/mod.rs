@@ -1,1 +1,1 @@
-pub mod apply_rpc;
+pub mod apply_rpc_service;

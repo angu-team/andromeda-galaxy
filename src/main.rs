@@ -5,7 +5,7 @@ mod services;
 use crate::controllers::ethers_controller::EthersController;
 use crate::repositories::ethers_repository::EthersRepository;
 use crate::repositories::redis_repository::RedisRepository;
-use crate::services::ethers::apply_rpc::ApplyRpcService;
+use crate::services::ethers::apply_rpc_service::ApplyRpcService;
 use std::sync::{Arc, RwLock};
 
 use actix_web::{web, App, HttpServer};
