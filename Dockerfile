@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN cargo build --release
 RUN cp ./target/release/andromeda-galaxy /bin/server
 
-ENV SSL_CERT_FILE=/dev/null
+
 EXPOSE 8080
 
 ENV ROCKET_ADDRESS=0.0.0.0
