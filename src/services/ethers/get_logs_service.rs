@@ -32,29 +32,29 @@ impl GetLogsService {
 
     async fn save_tx_if_block_not_saved(&self, block: Block<Transaction>) {
         let lock_elastic = self.elastic_repository.write().unwrap();
-        //
-        // let docs_filtrados = lock_elastic
-        //     .search::<serde_json::Value>(
-        //         "transactions",
-        //         &json!({
-        //             "query": {
-        //                 "bool": {
-        //                     "must": [
-        //                         { "match": {"blockHash": block.hash}},
-        //                     ]
-        //                 }
-        //             }
-        //         }),
-        //     )
-        //     .await
-        //     .expect("ERR");
-        //
-        // if docs_filtrados.len() == 0 {
+
+        let docs_filtrados = lock_elastic
+            .search::<serde_json::Value>(
+                "transactions",
+                &json!({
+                    "query": {
+                        "bool": {
+                            "must": [
+                                { "match": {"blockHash": block.hash}},
+                            ]
+                        }
+                    }
+                }),
+            )
+            .await
+            .expect("ERR");
+
+        if docs_filtrados.len() == 0 {
             lock_elastic
                 .index_bulk_documents("transactions", block.transactions)
                 .await
                 .expect("TODO: panic message");
-        // }
+        }
     }
 
     pub async fn exec(&self, user_id: i32, from_block: u64, to_block: u64) {
