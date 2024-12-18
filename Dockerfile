@@ -1,4 +1,4 @@
-FROM rust:1.83-alpine
+FROM rust:1.83
 
 WORKDIR /app
 COPY . .
