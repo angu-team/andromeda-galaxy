@@ -13,14 +13,16 @@ use std::env;
 use std::sync::{Arc, RwLock};
 
 use crate::services::ethers::get_logs_service::GetLogsService;
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, HttpServer,middleware::Logger};
 use redis::{Commands, FromRedisValue};
 
 #[actix_web::main]
 async fn main() {
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     dotenv().ok();
+
     HttpServer::new(move || {
-        let mut app = App::new();
+        let mut app = App::new().wrap(Logger::default());
 
         let elastic_repository = Arc::new(RwLock::new(
             ElasticRepository::new(
