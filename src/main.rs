@@ -33,7 +33,7 @@ async fn main() {
             .expect("Falha ao criar ElasticsearchService"),
         );
 
-        let redis_repository = Arc::new(RwLock::new(RedisRepository::connect()));
+        let redis_repository = Arc::new(RedisRepository::connect());
         let ethers_repository = Arc::new(RwLock::new(EthersRepository::new()));
 
         let apply_rpc_service = Arc::new(ApplyRpcService::new(
