@@ -15,6 +15,7 @@ pub enum ElasticRepositoryError {
     ResponseError(String),
 }
 
+#[derive(Clone)]
 pub struct ElasticRepository {
     client: Elasticsearch,
 }
@@ -23,9 +24,12 @@ impl ElasticRepository {
     pub fn new(elasticsearch_url: &str) -> Result<Self, ElasticRepositoryError> {
         let transport = elasticsearch::http::transport::TransportBuilder::new(
             elasticsearch::http::transport::SingleNodeConnectionPool::new(
-                elasticsearch_url.parse().map_err(|e| {
-                    ElasticRepositoryError::ConnectionError(ElasticsearchError::from(e))
-                }).expect("ERR "),
+                elasticsearch_url
+                    .parse()
+                    .map_err(|e| {
+                        ElasticRepositoryError::ConnectionError(ElasticsearchError::from(e))
+                    })
+                    .expect("ERR "),
             ),
         )
         .timeout(Duration::from_secs(30))
@@ -75,6 +79,20 @@ impl ElasticRepository {
         Ok(())
     }
 
+    /// Indexa um conjunto de documentos no Elasticsearch.
+    ///
+    /// # Argumentos
+    ///
+    /// * `index` - Nome do índice onde os documentos serão armazenados
+    /// * `documents` - Vetor de documentos a ser indexado (deve implementar Serialize)
+    ///
+    /// # Exemplo
+    ///
+    /// ```rust
+    /// use serde_json::json;
+    ///
+    /// let es_service = ElasticsearchService::new("http://localhost:9200");
+    /// ```
     pub async fn index_bulk_documents<T: Serialize>(
         &self,
         index: &str,
