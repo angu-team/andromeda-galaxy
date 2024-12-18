@@ -1,3 +1,4 @@
+use elasticsearch::cert::CertificateValidation;
 use elasticsearch::{
     BulkParts, Elasticsearch, Error as ElasticsearchError, IndexParts, SearchParts,
 };
@@ -29,6 +30,7 @@ impl ElasticRepository {
             ),
         )
         .timeout(Duration::from_secs(30))
+        .cert_validation(CertificateValidation::None)
         .build()
         .map_err(|e| ElasticRepositoryError::ConnectionError(ElasticsearchError::from(e)))?;
 

@@ -3,6 +3,8 @@ FROM rust:1.83
 WORKDIR /app
 COPY . .
 
+RUN apt-get update && apt-get install -y pkg-config libssl-dev
+
 RUN cargo build --release
 RUN cp ./target/release/andromeda-galaxy /bin/server
 
