@@ -6,6 +6,7 @@ use ethers::types::{Block, BlockId};
 use futures::future::join_all;
 use serde_json::json;
 use std::sync::{Arc, RwLock};
+use tokio::sync::{Semaphore, SemaphorePermit};
 use tokio::task;
 
 pub struct GetLogsService {
@@ -55,10 +56,14 @@ impl GetLogsService {
         let lock_provider = self.repository.read().unwrap();
         let mut handles = Vec::new();
 
+        let semaphore = Arc::new(Semaphore::new(300));
+
         for block_number in from_block..=to_block {
             let provider = lock_provider.get_connection(user_id).expect("ERR ");
+            let semaphore = Arc::clone(&semaphore);
 
             let handle = task::spawn(async move {
+                let lock:SemaphorePermit = semaphore.acquire().await.unwrap();
 
                 let block_id = BlockId::Number(BlockNumber::Number(block_number.into()));
                 let logs = provider.get_block_with_txs(block_id).await;
