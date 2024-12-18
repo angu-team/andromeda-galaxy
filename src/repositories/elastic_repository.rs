@@ -26,7 +26,7 @@ impl ElasticRepository {
             elasticsearch::http::transport::SingleNodeConnectionPool::new(
                 elasticsearch_url.parse().map_err(|e| {
                     ElasticRepositoryError::ConnectionError(ElasticsearchError::from(e))
-                })?,
+                }).expect("ERR "),
             ),
         )
         .timeout(Duration::from_secs(30))

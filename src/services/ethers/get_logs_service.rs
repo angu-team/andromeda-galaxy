@@ -48,13 +48,13 @@ impl GetLogsService {
             )
             .await
             .expect("ERR");
-        //
-        // if docs_filtrados.len() == 0 {
-        //     lock_elastic
-        //         .index_bulk_documents("transactions", block.transactions)
-        //         .await
-        //         .expect("TODO: panic message");
-        // }
+
+        if docs_filtrados.len() == 0 {
+            lock_elastic
+                .index_bulk_documents("transactions", block.transactions)
+                .await
+                .expect("TODO: panic message");
+        }
     }
 
     pub async fn exec(&self, user_id: i32, from_block: u64, to_block: u64) {
