@@ -24,14 +24,14 @@ async fn main() {
     HttpServer::new(move || {
         let mut app = App::new().wrap(Logger::default());
 
-        let elastic_repository = Arc::new(RwLock::new(
+        let elastic_repository = Arc::new(
             ElasticRepository::new(
                 env::var("ELASTICSEARCH_URI")
                     .expect("ELASTICSEARCH_URI not set")
                     .as_str(),
             )
             .expect("Falha ao criar ElasticsearchService"),
-        ));
+        );
 
         let redis_repository = Arc::new(RwLock::new(RedisRepository::connect()));
         let ethers_repository = Arc::new(RwLock::new(EthersRepository::new()));
@@ -41,7 +41,7 @@ async fn main() {
             redis_repository.clone(),
         ));
 
-        let get_logs_service = Arc::new(GetLogsService::new(ethers_repository.clone(),elastic_repository.clone()));
+        let get_logs_service = Arc::new(GetLogsService::new(ethers_repository.clone(),elastic_repository));
 
         app = app.app_data(web::Data::new(apply_rpc_service.clone()));
         app = app.app_data(web::Data::new(get_logs_service.clone()));

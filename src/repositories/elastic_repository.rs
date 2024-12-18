@@ -93,6 +93,7 @@ impl ElasticRepository {
         }
 
         self.client
+            .clone()
             .bulk(BulkParts::None)
             .body(
                 bulk_body
