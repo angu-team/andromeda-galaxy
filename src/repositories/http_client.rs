@@ -11,11 +11,11 @@ struct RetryOptions {
 }
 
 #[derive(Clone)]
-pub struct HttpClient {
+pub struct HttpClientRepository {
     client: Client,
 }
 
-impl HttpClient {
+impl HttpClientRepository {
     pub fn new() -> Self {
         let client = Client::builder()
             .danger_accept_invalid_certs(true)
@@ -23,7 +23,7 @@ impl HttpClient {
             .build()
             .unwrap();
 
-        HttpClient { client }
+        HttpClientRepository { client }
     }
 
     pub async fn retry<T, Fut, F>(&self, operation: F) -> Result<T, Error>
