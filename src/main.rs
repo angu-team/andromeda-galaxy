@@ -1,6 +1,7 @@
 mod controllers;
 mod repositories;
 mod services;
+pub mod http_client;
 
 use crate::controllers::ethers_controller::EthersController;
 use crate::repositories::ethers_repository::EthersRepository;
@@ -13,13 +14,15 @@ use std::env;
 use std::sync::{Arc, RwLock};
 
 use crate::services::ethers::get_logs_service::GetLogsService;
-use actix_web::{web, App, HttpServer,middleware::Logger};
+use actix_web::{middleware::Logger, web, App, HttpServer};
 use redis::{Commands, FromRedisValue};
+use http_client::HttpClient;
 
 #[actix_web::main]
 async fn main() {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     dotenv().ok();
+    let http_client = HttpClient::new();
 
     HttpServer::new(move || {
         let mut app = App::new().wrap(Logger::default());
