@@ -1,6 +1,4 @@
-use elasticsearch::{
-    BulkParts, Elasticsearch, Error as ElasticsearchError, IndexParts, SearchParts,
-};
+use elasticsearch::{BulkParts, CountParts, Elasticsearch, Error as ElasticsearchError, IndexParts, SearchParts};
 use ethers::prelude::Transaction;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -23,9 +21,12 @@ impl ElasticRepository {
     pub fn new(elasticsearch_url: &str) -> Result<Self, ElasticRepositoryError> {
         let transport = elasticsearch::http::transport::TransportBuilder::new(
             elasticsearch::http::transport::SingleNodeConnectionPool::new(
-                elasticsearch_url.parse().map_err(|e| {
-                    ElasticRepositoryError::ConnectionError(ElasticsearchError::from(e))
-                }).expect("ERR "),
+                elasticsearch_url
+                    .parse()
+                    .map_err(|e| {
+                        ElasticRepositoryError::ConnectionError(ElasticsearchError::from(e))
+                    })
+                    .expect("ERR "),
             ),
         )
         .timeout(Duration::from_secs(30))
@@ -106,6 +107,8 @@ impl ElasticRepository {
 
         Ok(())
     }
+
+
 
     /// Realiza uma busca no Elasticsearch.
     ///
@@ -194,4 +197,22 @@ impl ElasticRepository {
 
         Ok(hits)
     }
+
+    pub async fn index_documents_count(&self, index: &str) -> u64 {
+        let response = self.client
+            .count(CountParts::Index(&[index]))
+            .send()
+            .await
+            .expect("Falha ao fazer a contagem");
+
+        let response_body = response
+            .json::<Value>()
+            .await
+            .expect("Falha ao interpretar a resposta");
+
+        response_body["count"]
+            .as_u64()
+            .expect("Falha ao acessar o campo 'count'")
+    }
+
 }
