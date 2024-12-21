@@ -29,7 +29,7 @@ impl ElasticRepository {
                     .expect("ERR "),
             ),
         )
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(120))
         .build()
         .map_err(|e| ElasticRepositoryError::ConnectionError(ElasticsearchError::from(e)))?;
 
@@ -198,7 +198,7 @@ impl ElasticRepository {
         Ok(hits)
     }
 
-    pub async fn index_documents_count(&self, index: &str) -> u64 {
+    pub async fn index_documents_count(&self, index: &str,query:&Value) -> u64 {
         let response = self.client
             .count(CountParts::Index(&[index]))
             .send()
