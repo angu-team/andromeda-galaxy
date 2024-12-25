@@ -4,6 +4,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 use crate::services::ethers::get_logs_service::GetLogsService;
+use crate::services::ethers::listen_deploy_erc20_contracts_service::ListenDeployErc20ContractsService;
 
 pub struct EthersController;
 
@@ -42,6 +43,15 @@ impl EthersController {
         HttpResponse::Ok()
     }
 
+    pub async fn listen_deploy_erc20_contracts_ctrl(
+        path: web::Path<PathParams>,
+        service: web::Data<Arc<ListenDeployErc20ContractsService>>
+    ) -> impl Responder {
+
+        service.exec(path.id,String::from("")).await;
+        HttpResponse::Ok()
+    }
+
     pub async fn apply_rpc_ctrl(
         path: web::Path<PathParams>,
         request: web::Json<ApplyRpcCtrl>,
@@ -59,6 +69,7 @@ impl EthersController {
 
         routes.insert(String::from("ethers/{id}/apply_rpc"), web::post().to(Self::apply_rpc_ctrl));
         routes.insert(String::from("ethers/{id}/get_logs"), web::post().to(Self::get_logs_ctrl));
+        routes.insert(String::from("ethers/{id}/listen_deploy_erc20"), web::get().to(Self::listen_deploy_erc20_contracts_ctrl));
 
         routes
     }

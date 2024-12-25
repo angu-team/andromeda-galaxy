@@ -5,13 +5,14 @@ use ethers::providers::Middleware;
 use redis::AsyncCommands;
 use std::sync::{Arc, RwLock};
 
+#[derive(Clone)]
 pub struct ApplyRpcService {
     repository:Arc<RwLock<EthersRepository>>,
-    redis_repository:Arc<RwLock<RedisRepository>>,
+    redis_repository:Arc<RedisRepository>,
 }
 
 impl ApplyRpcService {
-    pub fn new(ethers_repository: Arc<RwLock<EthersRepository>>,redis_repository: Arc<RwLock<RedisRepository>>) -> Self {
+    pub fn new(ethers_repository:Arc<RwLock<EthersRepository>>, redis_repository: Arc<RedisRepository>) -> Self {
         ApplyRpcService {
             repository : ethers_repository,
             redis_repository
@@ -19,13 +20,11 @@ impl ApplyRpcService {
     }
 
     pub async fn exec(&self, user_id: i32, endpoint: String){
-        let mut lock_repository = self.repository.write().unwrap();
-        let mut lock_redis = self.redis_repository.write().unwrap();
+        let mut redis_conn = self.redis_repository.get_conn().await;
 
-        let mut redis_conn = lock_redis.get_conn().await;
         let provider = Provider::<Ws>::connect(&endpoint).await.expect("ERRCON 500");
+        self.repository.write().unwrap().apply_connection(user_id,provider);
 
-        lock_repository.apply_connection(user_id,provider);
         let _: i64 = redis_conn.hset("connections",user_id.to_string(),&endpoint).await.expect("ae");
     }
 

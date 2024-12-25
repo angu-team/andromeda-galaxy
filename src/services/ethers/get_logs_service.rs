@@ -54,12 +54,11 @@ impl GetLogsService {
     }
 
     pub async fn exec(&self, user_id: i32, from_block: u64, to_block: u64) {
-        let lock_provider = self.repository.read().unwrap();
         let mut handles = Vec::new();
         let semaphore = Arc::new(Semaphore::new(300));
 
         for block_number in from_block..=to_block {
-            let provider = lock_provider.get_connection(user_id).expect("ERR ");
+            let provider = self.repository.read().unwrap().get_connection(user_id).expect("ERR ");
             let semaphore = Arc::clone(&semaphore);
             let my_clone = self.clone();
 

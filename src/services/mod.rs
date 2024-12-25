@@ -1,3 +1,7 @@
 pub mod ethers;
 pub mod go_plus;
-pub mod http_client;
+pub mod etherscan;
+
+pub mod elastic;
+
+pub mod contract;
