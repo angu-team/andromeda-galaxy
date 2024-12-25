@@ -1,4 +1,7 @@
-use elasticsearch::{BulkParts, CountParts, Elasticsearch, Error as ElasticsearchError, IndexParts, SearchParts};
+use elasticsearch::{
+    BulkParts, CountParts, Elasticsearch, Error as ElasticsearchError, IndexParts, ScrollParts,
+    SearchParts,
+};
 use ethers::prelude::Transaction;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -11,6 +14,12 @@ pub enum ElasticRepositoryError {
     ConnectionError(#[from] ElasticsearchError),
     #[error("Erro ao processar resposta: {0}")]
     ResponseError(String),
+}
+
+#[derive(Serialize)]
+pub struct SearchResult<T> {
+    pub items: Vec<T>,
+    pub next_cursor: Option<String>,
 }
 
 #[derive(Clone)]
@@ -123,8 +132,6 @@ impl ElasticRepository {
         Ok(())
     }
 
-
-
     /// Realiza uma busca no Elasticsearch.
     ///
     /// # Argumentos
@@ -213,8 +220,9 @@ impl ElasticRepository {
         Ok(hits)
     }
 
-    pub async fn index_documents_count(&self, index: &str,query:&Value) -> u64 {
-        let response = self.client
+    pub async fn index_documents_count(&self, index: &str, query: &Value) -> u64 {
+        let response = self
+            .client
             .count(CountParts::Index(&[index]))
             .send()
             .await
@@ -230,4 +238,117 @@ impl ElasticRepository {
             .expect("Falha ao acessar o campo 'count'")
     }
 
+    /// Realiza uma busca paginada no Elasticsearch usando scroll.
+    ///
+    /// # Argumentos
+    ///
+    /// * `index` - Nome do índice onde a busca será realizada
+    /// * `query` - Query opcional em formato String para a busca
+    /// * `size` - Número de documentos por página
+    /// * `scroll_id` - ID opcional do scroll para continuar uma busca anterior
+    ///
+    /// # Retorno
+    ///
+    /// Retorna um `SearchResult<T>` contendo:
+    /// * `items` - Vec<T> com os documentos encontrados
+    /// * `next_cursor` - Option<String> com o próximo scroll_id para paginação
+    ///
+    /// # Exemplo
+    ///
+    /// ```rust
+    /// // Primeira página
+    /// let result = es_service.search_with_pagination::<Transaction>(
+    ///     "transactions",
+    ///     Some("query".to_string()),
+    ///     1000,
+    ///     None
+    /// ).await?;
+    ///
+    /// // Próximas páginas usando scroll_id
+    /// let next_page = es_service.search_with_pagination::<Transaction>(
+    ///     "transactions",
+    ///     Some("query".to_string()),
+    ///     1000,
+    ///     result.next_cursor
+    /// ).await?;
+    /// ```
+    pub async fn search_with_pagination<T: for<'de> Deserialize<'de>>(
+        &self,
+        index: &str,
+        query: Option<String>,
+        size: i64,
+        scroll_id: Option<String>,
+    ) -> Result<SearchResult<T>, ElasticRepositoryError> {
+        const SCROLL_TIME: &str = "10m";
+
+        if let Some(scroll_id) = scroll_id {
+            let scroll_response = self
+                .client
+                .scroll(ScrollParts::None)
+                .scroll(SCROLL_TIME)
+                .body(json!({
+                    "scroll_id": scroll_id
+                }))
+                .send()
+                .await?;
+
+            let response_body = scroll_response.json::<Value>().await?;
+            let next_scroll_id = response_body["_scroll_id"].as_str().map(|s| s.to_string());
+
+            let empty_vec = Vec::new();
+            let hits = response_body["hits"]["hits"]
+                .as_array()
+                .unwrap_or(&empty_vec);
+
+            let items: Vec<T> = hits
+                .iter()
+                .filter_map(|hit| serde_json::from_value(hit["_source"].clone()).ok())
+                .collect();
+
+            Ok(SearchResult {
+                items,
+                next_cursor: next_scroll_id,
+            })
+        } else {
+            let query_body = json!({
+                "size": size,
+                "track_total_hits": true,
+                "query": query
+            });
+
+            let response = self
+                .client
+                .search(SearchParts::Index(&[index]))
+                .scroll(SCROLL_TIME)
+                .body(query_body)
+                .send()
+                .await?;
+
+            let response_body = response.json::<Value>().await?;
+            let next_scroll_id = response_body["_scroll_id"].as_str().map(|s| s.to_string());
+            let empty_vec = Vec::new();
+            let hits = response_body["hits"]["hits"]
+                .as_array()
+                .unwrap_or(&empty_vec);
+
+            let items: Vec<T> = hits
+                .iter()
+                .filter_map(|hit| {
+                    let result = serde_json::from_value(hit["_source"].clone());
+                    if let Err(ref e) = result {
+                        println!("Documento que causou erro: {:?}", hit["_source"]);
+                        println!("Erro: {}", e);
+
+                        return None;
+                    }
+                    result.ok()
+                })
+                .collect();
+
+            Ok(SearchResult {
+                items,
+                next_cursor: next_scroll_id,
+            })
+        }
+    }
 }
