@@ -2,7 +2,7 @@ mod controllers;
 pub mod http_client;
 mod repositories;
 mod services;
-
+mod utils;
 use crate::controllers::ethers_controller::EthersController;
 use crate::repositories::elastic_repository::ElasticRepository;
 use crate::repositories::ethers_repository::EthersRepository;
@@ -29,7 +29,7 @@ async fn main() {
 
     HttpServer::new(move || {
         let mut app = App::new().wrap(Logger::default());
-
+        let http_client = HttpClient::new();
         let elastic_repository = Arc::new(
             ElasticRepository::new(
                 env::var("ELASTICSEARCH_URI")
@@ -58,7 +58,7 @@ async fn main() {
         ));
 
         let listen_deploy_erc20_contracts_service = Arc::new(
-            ListenDeployErc20ContractsService::new(ethers_repository.clone()),
+            ListenDeployErc20ContractsService::new(ethers_repository.clone(),http_client),
         );
 
         app = app.app_data(web::Data::new(apply_rpc_service.clone()));
