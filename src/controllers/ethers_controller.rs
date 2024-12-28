@@ -3,6 +3,7 @@ use actix_web::{web, HttpResponse, Responder, Route};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
+use ethers::core::k256::elliptic_curve::zeroize::CString;
 use crate::services::ethers::get_logs_service::GetLogsService;
 use crate::services::ethers::listen_deploy_erc20_contracts_service::ListenDeployErc20ContractsService;
 
@@ -22,6 +23,7 @@ struct GetLogsCtrl {
 #[derive(Deserialize)]
 struct PathParams {
     id: i32,
+    webhook:String
 }
 
 impl EthersController {
@@ -47,8 +49,10 @@ impl EthersController {
         path: web::Path<PathParams>,
         service: web::Data<Arc<ListenDeployErc20ContractsService>>
     ) -> impl Responder {
+        let id = path.id.clone();
+        let webhook = path.webhook.clone();
 
-        service.exec(path.id,String::from("")).await;
+        service.exec(id,webhook).await;
         HttpResponse::Ok()
     }
 
