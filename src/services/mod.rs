@@ -4,4 +4,3 @@ pub mod etherscan;
 
 pub mod elastic;
 
-pub mod contract;
