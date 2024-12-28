@@ -1,9 +1,10 @@
-use crate::services::http_client::HttpClient;
+
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     Error,
 };
 use serde_json::Value;
+use crate::http_client::HttpClient;
 
 pub struct GoPlusService {
     http_client: HttpClient,
