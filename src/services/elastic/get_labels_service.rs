@@ -12,14 +12,14 @@ pub struct ElasticLabel {
     name_tag: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Transaction {
-    hash: String,
-    from: String,
-    to: Option<String>,
-    input: String,
-    // ... outros campos necessários ...
-}
+// #[derive(Debug, Serialize, Deserialize)]
+// pub struct Transaction {
+//     hash: String,
+//     from: String,
+//     to: Option<String>,
+//     input: String,
+//     // ... outros campos necessários ...
+// }
 
 pub struct GetLabelsService {
     elastic_repository: Arc<ElasticRepository>,
