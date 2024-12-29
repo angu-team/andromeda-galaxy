@@ -24,7 +24,7 @@ impl ListenDeployErc20ContractsService {
 
         stream.for_each(|block| {
             let provider = lock_provider.clone().get_connection(user_id).unwrap();
-
+            let webhook_clone = webhook.clone();
             async move {
                 let block_id = BlockId::Number(BlockNumber::Number(block.number.unwrap()));
                 let block_data = provider.get_block_with_txs(block_id).await.expect("ERR").unwrap();
@@ -40,7 +40,7 @@ impl ListenDeployErc20ContractsService {
                 }
                 let length = transactions.len();
                 if(length >= 1){
-                    match self.http_client.get_client().post(webhook).json(&transactions).send().await {
+                    match self.http_client.get_client().post(webhook_clone).json(&transactions).send().await {
                         Ok(resp) => Some(resp),
                         Err(err) => {
                             eprintln!("Erro ao enviar requisição: {}", err);
