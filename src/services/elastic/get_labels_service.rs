@@ -47,7 +47,7 @@ impl GetLabelsService {
     /// // Buscar labels específicas
     /// let specific_labels = service.exec(Some("exchange".to_string())).await?;
     /// ```
-    pub async fn exec(
+    pub async fn exec_by_label(
         &self,
         label: Option<String>,
         size: i32,
@@ -78,5 +78,23 @@ impl GetLabelsService {
             )
             .await?;
         Ok(result)
+    }
+
+    pub async fn exec_by_address(
+        &self,
+        address: String,
+    ) -> Result<Vec<ElasticLabel>, Box<dyn std::error::Error>> {
+        let query = json!({
+            "query": {
+                "match": {
+                    "address": address
+                }
+            }
+        });
+
+        self.elastic_repository
+            .search::<ElasticLabel>("labels", &query)
+            .await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
     }
 }
