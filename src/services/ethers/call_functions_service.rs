@@ -18,13 +18,12 @@ impl CallFunctionsService {
     }
 
     pub async fn exec(&self, user_id:i32,contract_adress:String,functions_name:Vec<String>) -> HashMap<String,String>{
-        let lock_provider: RwLockReadGuard<EthersRepository> = self.repository.read().unwrap();
-        let connection: Arc<Provider<Ws>> = lock_provider.get_connection(user_id).unwrap();
+        let provider = self.repository.read().unwrap().get_connection(user_id).expect("ERR ");
 
         let parsed_abi:Abi = serde_json::from_str(AbiUtils::erc20_abi()).expect("ERR");
         let token_address:Address = contract_adress.parse().unwrap();
 
-        let contract = Contract::new(token_address,parsed_abi,connection);
+        let contract = Contract::new(token_address,parsed_abi,provider);
         let mut functions_response:HashMap<String,String> = HashMap::new();
 
         for function_name in functions_name {
