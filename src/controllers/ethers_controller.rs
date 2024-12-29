@@ -3,7 +3,7 @@ use actix_web::{web, HttpResponse, Responder, Route};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
-use ethers::core::k256::elliptic_curve::zeroize::CString;
+
 use crate::services::ethers::get_logs_service::GetLogsService;
 use crate::services::ethers::listen_deploy_erc20_contracts_service::ListenDeployErc20ContractsService;
 
