@@ -21,6 +21,7 @@ use crate::services::ethers::listen_deploy_erc20_contracts_service::ListenDeploy
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use http_client::HttpClient;
 use redis::{Commands, FromRedisValue};
+use crate::services::ethers::call_functions_service::CallFunctionsService;
 
 #[actix_web::main]
 async fn main() {
@@ -61,8 +62,13 @@ async fn main() {
             ListenDeployErc20ContractsService::new(ethers_repository.clone(),http_client),
         );
 
+        let call_functions_service = Arc::new(
+            CallFunctionsService::new(ethers_repository.clone())
+        );
+
         app = app.app_data(web::Data::new(apply_rpc_service.clone()));
         app = app.app_data(web::Data::new(get_erc20_contracts.clone()));
+        app = app.app_data(web::Data::new(call_functions_service.clone()));
         app = app.app_data(web::Data::new(get_labels_service.clone()));
         app = app.app_data(web::Data::new(get_logs_service.clone()));
         app = app.app_data(web::Data::new(

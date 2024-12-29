@@ -4,6 +4,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use crate::services::ethers::call_functions_service::CallFunctionsService;
 use crate::services::ethers::get_logs_service::GetLogsService;
 use crate::services::ethers::listen_deploy_erc20_contracts_service::ListenDeployErc20ContractsService;
 
@@ -15,15 +16,25 @@ struct ApplyRpcCtrl {
 }
 
 #[derive(Deserialize)]
+struct CallFunctionsCtrl {
+    functions_name: Vec<String>,
+}
+
+#[derive(Deserialize)]
 struct GetLogsCtrl {
     from_block: u64,
     to_block: u64
 }
 
 #[derive(Deserialize)]
-struct PathParams {
-    id: i32,
+struct ListenDeployErc20ContractsCtrl {
     webhook:String
+}
+
+
+#[derive(Deserialize)]
+struct PathParams {
+    id: i32
 }
 
 impl EthersController {
@@ -45,12 +56,26 @@ impl EthersController {
         HttpResponse::Ok()
     }
 
+    pub async fn call_functions_ctrl(
+        path: web::Path<PathParams>,
+        request: web::Json<CallFunctionsCtrl>,
+        service: web::Data<Arc<CallFunctionsService>>
+    ) -> impl Responder {
+        let id = path.id.clone();
+        let functions_name = request.functions_name.clone();
+
+        let service_response = service.exec(id, "0x17837004ea685690b32dbead02a274ec4333a26a".parse().unwrap(),functions_name).await;
+        // let service_response = web::Json(service_response);
+        HttpResponse::Ok().json(service_response)
+    }
+
     pub async fn listen_deploy_erc20_contracts_ctrl(
         path: web::Path<PathParams>,
+        request: web::Json<ListenDeployErc20ContractsCtrl>,
         service: web::Data<Arc<ListenDeployErc20ContractsService>>
     ) -> impl Responder {
         let id = path.id.clone();
-        let webhook = path.webhook.clone();
+        let webhook = request.webhook.clone();
 
         service.exec(id,webhook).await;
         HttpResponse::Ok()
@@ -72,6 +97,7 @@ impl EthersController {
         let mut routes = HashMap::new();
 
         routes.insert(String::from("ethers/{id}/apply_rpc"), web::post().to(Self::apply_rpc_ctrl));
+        routes.insert(String::from("ethers/{id}/test"), web::post().to(Self::call_functions_ctrl));
         routes.insert(String::from("ethers/{id}/get_logs"), web::post().to(Self::get_logs_ctrl));
         routes.insert(String::from("ethers/{id}/listen_deploy_erc20"), web::get().to(Self::listen_deploy_erc20_contracts_ctrl));
 
