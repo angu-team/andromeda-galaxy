@@ -3,10 +3,9 @@ use crate::repositories::ethers_repository::EthersRepository;
 use ethers::middleware::Middleware;
 use ethers::prelude::{BlockNumber, Transaction};
 use ethers::types::{Block, BlockId};
-use futures::future::join_all;
 use serde_json::json;
-use std::sync::{Arc, RwLock};
-use tokio::sync::{Semaphore, SemaphorePermit};
+use std::sync::Arc;
+use tokio::sync::{RwLock, Semaphore, SemaphorePermit};
 use tokio::task;
 
 #[derive(Clone)]
@@ -58,7 +57,7 @@ impl GetLogsService {
         let semaphore = Arc::new(Semaphore::new(300));
 
         for block_number in from_block..=to_block {
-            let provider = self.repository.read().unwrap().get_connection(user_id).expect("ERR ");
+            let provider = self.repository.read().await.get_connection(user_id).expect("ERR ");
             let semaphore = Arc::clone(&semaphore);
             let my_clone = self.clone();
 

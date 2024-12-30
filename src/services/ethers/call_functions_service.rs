@@ -1,15 +1,16 @@
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock, RwLockReadGuard};
 use ethers::abi::Abi;
-use ethers::contract::{Contract, ContractError};
-use ethers::middleware::Middleware;
 use ethers::abi::Token;
+use ethers::contract::Contract;
+use ethers::middleware::Middleware;
+use std::collections::HashMap;
+use std::sync::{Arc};
 
-use ethers::types::Address;
-use serde_json::{json, Value};
 use crate::repositories::ethers_repository::EthersRepository;
 use crate::utils::abi_utils::AbiUtils;
 use crate::utils::ethers_utils::EthersUtils;
+use ethers::types::Address;
+use serde_json::Value;
+use tokio::sync::RwLock;
 
 pub struct CallFunctionsService {
     repository: Arc<RwLock<EthersRepository>>
@@ -21,7 +22,11 @@ impl CallFunctionsService {
     }
 
     pub async fn exec(&self, user_id:i32, contract_adress:String, functions_name:Vec<String>) -> HashMap<String, Value> {
-        let provider = self.repository.read().unwrap().get_connection(user_id).expect("ERR ");
+
+        let provider = {
+            let lock = self.repository.read().await;
+            lock.get_connection(user_id).expect("ERR CONN")
+        };
 
         let parsed_abi:Abi = serde_json::from_str(AbiUtils::erc20_abi()).expect("ERR");
         let token_address:Address = contract_adress.parse().unwrap();

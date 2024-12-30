@@ -3,7 +3,8 @@ use crate::repositories::redis_repository::RedisRepository;
 use ethers::prelude::{Provider, Ws};
 use ethers::providers::Middleware;
 use redis::AsyncCommands;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
+use tokio::sync::RwLock;
 
 #[derive(Clone)]
 pub struct ApplyRpcService {
@@ -28,14 +29,14 @@ impl ApplyRpcService {
         let mut redis_conn = self.redis_repository.get_conn().await;
 
         let provider = Provider::<Ws>::connect(&endpoint).await.expect("ERRCON 500");
-        self.repository.write().unwrap().apply_connection(user_id, provider);
+        self.repository.write().await.apply_connection(user_id, provider);
 
         let _: i64 = redis_conn.hset("connections",user_id.to_string(),&endpoint).await.expect("ae");
     }
 
     async fn start_block_listener(&self, user_id:i32, endpoint: String){
         let provider = Provider::<Ws>::connect(&endpoint).await.expect("ERRCON 500");
-        self.repository.write().unwrap().apply_block_listener(user_id, provider).await;
+        self.repository.write().await.apply_block_listener(user_id, provider).await;
     }
 
 }

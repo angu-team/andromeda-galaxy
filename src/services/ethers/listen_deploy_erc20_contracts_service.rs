@@ -4,8 +4,9 @@ use crate::utils::bytecode_utils::BytecodeUtils;
 use ethers::prelude::{Block, BlockNumber, Provider, StreamExt, Ws, H256};
 use ethers::providers::Middleware;
 use ethers::types::{BlockId, Transaction};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
 use async_broadcast::Receiver;
+use tokio::sync::RwLock;
 
 pub struct ListenDeployErc20ContractsService {
     repository: Arc<RwLock<EthersRepository>>,
@@ -21,7 +22,7 @@ impl ListenDeployErc20ContractsService {
     }
 
     pub async fn exec(&self, user_id: i32, webhook: String) {
-        let block_listener = self.repository.read().unwrap().get_block_listener(user_id);
+        let block_listener = self.repository.read().await.get_block_listener(user_id);
 
         if let Some(mut receiver) = block_listener {
             let repository = self.repository.clone();
@@ -78,7 +79,7 @@ impl ListenDeployErc20ContractsService {
         mut receiver: Receiver<Block<H256>>,
     ) -> impl std::future::Future<Output = ()> {
         async move {
-            let provider = Self::get_provider(repository, user_id);
+            let provider = Self::get_provider(repository, user_id).await;
 
             while let Ok(block) = receiver.recv().await {
                 let transactions = Self::process_block(&provider, block).await;
@@ -92,11 +93,11 @@ impl ListenDeployErc20ContractsService {
         }
     }
 
-    fn get_provider(
+    async fn get_provider(
         repository: Arc<RwLock<EthersRepository>>,
         user_id: i32,
     ) -> Arc<Provider<Ws>> {
-        repository.read().unwrap().get_connection(user_id).unwrap()
+        repository.read().await.get_connection(user_id).unwrap()
     }
 
 }
