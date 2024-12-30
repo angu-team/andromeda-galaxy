@@ -35,9 +35,14 @@ async fn main() {
                 .expect("ELASTICSEARCH_URI not set")
                 .as_str(),
         )
-            .expect("Falha ao criar ElasticsearchService"),
+            .expect("Falha ao criar ElasticRepository"),
     );
-    let redis_repository = Arc::new(RedisRepository::connect());
+
+    let redis_repository = Arc::new(RedisRepository::connect(
+        env::var("REDIS_URI")
+            .expect("REDIS_URI not set")
+            .as_str(),
+    ));
     let ethers_repository = Arc::new(RwLock::new(EthersRepository::new()));
 
     let apply_rpc_service = Arc::new(ApplyRpcService::new(

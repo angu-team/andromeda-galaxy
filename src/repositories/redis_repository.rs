@@ -5,8 +5,8 @@ pub struct RedisRepository {
 }
 
 impl RedisRepository {
-    pub fn connect() -> Self {
-        let manager = Manager::new("redis://default:251410@operacional_redis:6379").expect("ERR REDIS");
+    pub fn connect(uri:&str) -> Self {
+        let manager = Manager::new(uri).expect("ERR REDIS");
         let pool = Pool::builder(manager).max_size(16).build().unwrap();
 
         Self { pool }
