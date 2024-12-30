@@ -19,13 +19,23 @@ impl ApplyRpcService {
         }
     }
 
-    pub async fn exec(&self, user_id: i32, endpoint: String){
+    pub async fn exec(&self, user_id:i32, endpoint:String){
+        self.start_connection(user_id, endpoint.clone()).await;
+        self.start_block_listener(user_id, endpoint.clone()).await;
+    }
+
+    async fn start_connection(&self, user_id: i32, endpoint: String){
         let mut redis_conn = self.redis_repository.get_conn().await;
 
         let provider = Provider::<Ws>::connect(&endpoint).await.expect("ERRCON 500");
-        self.repository.write().unwrap().apply_connection(user_id,provider);
+        self.repository.write().unwrap().apply_connection(user_id, provider);
 
         let _: i64 = redis_conn.hset("connections",user_id.to_string(),&endpoint).await.expect("ae");
+    }
+
+    async fn start_block_listener(&self, user_id:i32, endpoint: String){
+        let provider = Provider::<Ws>::connect(&endpoint).await.expect("ERRCON 500");
+        self.repository.write().unwrap().apply_block_listener(user_id, provider).await;
     }
 
 }
