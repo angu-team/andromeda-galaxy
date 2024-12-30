@@ -99,7 +99,7 @@ impl EthersController {
         routes.insert(String::from("ethers/{id}/apply_rpc"), web::post().to(Self::apply_rpc_ctrl));
         routes.insert(String::from("ethers/{id}/test"), web::post().to(Self::call_functions_ctrl));
         routes.insert(String::from("ethers/{id}/get_logs"), web::post().to(Self::get_logs_ctrl));
-        routes.insert(String::from("ethers/{id}/listen_deploy_erc20"), web::get().to(Self::listen_deploy_erc20_contracts_ctrl));
+        routes.insert(String::from("ethers/{id}/listen_deploy_erc20"), web::post().to(Self::listen_deploy_erc20_contracts_ctrl));
 
         routes
     }
