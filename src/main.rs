@@ -10,19 +10,21 @@ use crate::repositories::redis_repository::RedisRepository;
 use crate::services::ethers::apply_rpc_service::ApplyRpcService;
 
 use dotenv::dotenv;
-use services::elastic::get_labels_service::GetLabelsService;
+use services::elastic::{
+    get_labels_service::GetLabelsService, get_transactions_service::GetTransactionsService,
+};
 use std::env;
-use std::sync::{Arc};
+use std::sync::Arc;
 
 use crate::controllers::elastic_controller::ElasticController;
 use crate::services::elastic::get_erc20_contracts_service::GetErc20ContractsService;
+use crate::services::ethers::call_functions_service::CallFunctionsService;
 use crate::services::ethers::get_logs_service::GetLogsService;
 use crate::services::ethers::listen_deploy_erc20_contracts_service::ListenDeployErc20ContractsService;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use http_client::HttpClient;
 use redis::{Commands, FromRedisValue};
 use tokio::sync::RwLock;
-use crate::services::ethers::call_functions_service::CallFunctionsService;
 
 #[actix_web::main]
 async fn main() {
@@ -35,13 +37,11 @@ async fn main() {
                 .expect("ELASTICSEARCH_URI not set")
                 .as_str(),
         )
-            .expect("Falha ao criar ElasticRepository"),
+        .expect("Falha ao criar ElasticRepository"),
     );
 
     let redis_repository = Arc::new(RedisRepository::connect(
-        env::var("REDIS_URI")
-            .expect("REDIS_URI not set")
-            .as_str(),
+        env::var("REDIS_URI").expect("REDIS_URI not set").as_str(),
     ));
     let ethers_repository = Arc::new(RwLock::new(EthersRepository::new()));
 
@@ -51,17 +51,18 @@ async fn main() {
     ));
     let get_erc20_contracts = Arc::new(GetErc20ContractsService::new(elastic_repository.clone()));
     let get_labels_service = Arc::new(GetLabelsService::new(elastic_repository.clone()));
+    let get_transactions_service =
+        Arc::new(GetTransactionsService::new(elastic_repository.clone()));
     let get_logs_service = Arc::new(GetLogsService::new(
         ethers_repository.clone(),
         elastic_repository.clone(),
     ));
-    let listen_deploy_erc20_contracts_service = Arc::new(
-        ListenDeployErc20ContractsService::new(ethers_repository.clone(), HttpClient::new()),
-    );
+    let listen_deploy_erc20_contracts_service = Arc::new(ListenDeployErc20ContractsService::new(
+        ethers_repository.clone(),
+        HttpClient::new(),
+    ));
 
-    let call_functions_service = Arc::new(
-        CallFunctionsService::new(ethers_repository.clone())
-    );
+    let call_functions_service = Arc::new(CallFunctionsService::new(ethers_repository.clone()));
 
     HttpServer::new(move || {
         let mut app = App::new().wrap(Logger::default());
@@ -70,6 +71,7 @@ async fn main() {
         app = app.app_data(web::Data::new(get_erc20_contracts.clone()));
         app = app.app_data(web::Data::new(call_functions_service.clone()));
         app = app.app_data(web::Data::new(get_labels_service.clone()));
+        app = app.app_data(web::Data::new(get_transactions_service.clone()));
         app = app.app_data(web::Data::new(get_logs_service.clone()));
         app = app.app_data(web::Data::new(
             listen_deploy_erc20_contracts_service.clone(),

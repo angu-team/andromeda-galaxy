@@ -70,12 +70,7 @@ impl GetLabelsService {
 
         let result = self
             .elastic_repository
-            .search_with_pagination::<ElasticLabel>(
-                "labels",
-                Some(query.to_string()),
-                size as i64,
-                cursor,
-            )
+            .search_with_pagination::<ElasticLabel>("labels", Some(query), size as i64, cursor)
             .await?;
         Ok(result)
     }
