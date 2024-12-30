@@ -275,7 +275,7 @@ impl ElasticRepository {
     pub async fn search_with_pagination<T: for<'de> Deserialize<'de>>(
         &self,
         index: &str,
-        query: Option<String>,
+        query: Option<Value>,
         size: i64,
         scroll_id: Option<String>,
     ) -> Result<SearchResult<T>, ElasticRepositoryError> {
@@ -313,7 +313,7 @@ impl ElasticRepository {
             let query_body = json!({
                 "size": size,
                 "track_total_hits": true,
-                "query": query
+                "query": query.unwrap_or(json!({}))
             });
 
             let response = self
