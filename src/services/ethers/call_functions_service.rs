@@ -1,10 +1,10 @@
 use ethers::abi::Abi;
 use ethers::abi::Token;
-use ethers::contract::Contract;
+use ethers::contract::{Contract, ContractInstance};
 use ethers::middleware::Middleware;
 use std::collections::HashMap;
 use std::sync::{Arc};
-
+use ethers::prelude::{Provider, Ws};
 use crate::repositories::ethers_repository::EthersRepository;
 use crate::utils::abi_utils::AbiUtils;
 use crate::utils::ethers_utils::EthersUtils;
@@ -21,6 +21,17 @@ impl CallFunctionsService {
         CallFunctionsService { repository}
     }
 
+    async fn get_call_response(
+        contract: ContractInstance<Arc<Provider<Ws>>, Provider<Ws>>,
+        function_name: &str,
+    ) -> Option<Token> {
+        if let Ok(method) = contract.method(&function_name, ()) {
+            method.call().await.ok()
+        } else {
+            None
+        }
+    }
+
     pub async fn exec(&self, user_id:i32, contract_adress:String, functions_name:Vec<String>, abi:String) -> HashMap<String, Value> {
 
         let provider = {
@@ -35,10 +46,14 @@ impl CallFunctionsService {
         let mut functions_response:HashMap<String,Value> = HashMap::new();
 
         for function_name in functions_name {
-            let call_response: Token = contract.method(&function_name, ()).expect("ERR CALL METHOD").call().await.expect("ERR CALL METHOD2");
-            let token_to_json = EthersUtils::token_to_json(call_response);
 
-            functions_response.insert(function_name,token_to_json);
+            let call_response = Self::get_call_response(contract.clone(), &function_name).await;
+
+            if let Some(token) = call_response {
+                let token_to_json = EthersUtils::token_to_json(token);
+                functions_response.insert(function_name,token_to_json);
+            }
+
         }
 
         functions_response
