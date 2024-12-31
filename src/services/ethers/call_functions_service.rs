@@ -21,14 +21,14 @@ impl CallFunctionsService {
         CallFunctionsService { repository}
     }
 
-    pub async fn exec(&self, user_id:i32, contract_adress:String, functions_name:Vec<String>) -> HashMap<String, Value> {
+    pub async fn exec(&self, user_id:i32, contract_adress:String, functions_name:Vec<String>, abi:String) -> HashMap<String, Value> {
 
         let provider = {
             let lock = self.repository.read().await;
             lock.get_connection(user_id).expect("ERR CONN")
         };
 
-        let parsed_abi:Abi = serde_json::from_str(AbiUtils::erc20_abi()).expect("ERR");
+        let parsed_abi:Abi = serde_json::from_str(&abi).expect("ERR");
         let token_address:Address = contract_adress.parse().unwrap();
 
         let contract = Contract::new(token_address,parsed_abi,provider);
