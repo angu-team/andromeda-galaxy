@@ -18,7 +18,8 @@ struct ApplyRpcCtrl {
 #[derive(Deserialize)]
 struct CallFunctionsCtrl {
     functions_name: Vec<String>,
-    abi:String
+    abi:String,
+    address:String
 }
 
 #[derive(Deserialize)]
@@ -65,8 +66,9 @@ impl EthersController {
         let id = path.id.clone();
         let functions_name = request.functions_name.clone();
         let abi = request.abi.clone();
+        let address = request.address.clone();
 
-        let service_response = service.exec(id, "0x17837004ea685690b32dbead02a274ec4333a26a".parse().unwrap(),functions_name,abi).await;
+        let service_response = service.exec(id, address,functions_name,abi).await;
         // let service_response = web::Json(service_response);
         HttpResponse::Ok().json(service_response)
     }
