@@ -5,7 +5,7 @@ use ethers::prelude::{Block, BlockNumber, Provider, StreamExt, Ws, H256};
 use ethers::providers::Middleware;
 use ethers::types::{BlockId, Transaction};
 use std::sync::{Arc};
-use async_broadcast::Receiver;
+use tokio::sync::mpsc::Receiver;
 use tokio::sync::RwLock;
 
 pub struct ListenDeployErc20ContractsService {
@@ -22,9 +22,9 @@ impl ListenDeployErc20ContractsService {
     }
 
     pub async fn exec(&self, user_id: i32, webhook: String) {
-        let block_listener = self.repository.read().await.get_block_listener(user_id);
+        let block_listener = self.repository.write().await.get_block_listener(user_id);
 
-        if let Some(mut receiver) = block_listener {
+        if let Some(receiver) = block_listener {
             let repository = self.repository.clone();
             tokio::spawn(Self::spawn_process_task(repository, user_id, webhook, receiver));
         } else {
@@ -81,7 +81,8 @@ impl ListenDeployErc20ContractsService {
         async move {
             let provider = Self::get_provider(repository, user_id).await;
 
-            while let Ok(block) = receiver.recv().await {
+            while let Some(block) = receiver.recv().await {
+                println!("Block: {}", block.number.unwrap());
                 let transactions = Self::process_block(&provider, block).await;
 
                 if !transactions.is_empty() {

@@ -1,4 +1,3 @@
-use async_broadcast::{broadcast, Receiver};
 use ethers::middleware::Middleware;
 use ethers::providers::{Provider, Ws};
 use ethers::types::{Block, H256};
@@ -6,6 +5,7 @@ use futures::stream::StreamExt;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::spawn;
+use tokio::sync::mpsc::Receiver;
 
 pub struct EthersRepository {
     connections: HashMap<i32, Arc<Provider<Ws>>>,
@@ -41,8 +41,8 @@ impl EthersRepository {
     ///
     /// - A função retorna `Some(receiver)` se o `user_id` estiver registrado com um listener.
     /// - Caso contrário, retorna `None`, indicando que o `user_id` não possui um listener configurado.
-    pub fn get_block_listener(&self, user_id: i32) -> Option<Receiver<Block<H256>>> {
-        self.block_listeners.get(&user_id).cloned()
+    pub fn get_block_listener(&mut self, user_id: i32) -> Option<Receiver<Block<H256>>> {
+        self.block_listeners.remove(&user_id)
     }
 
     /// Essa função registra e armazena um `Provider<Ws>` (conexão WebSocket) associado a um usuário específico.
@@ -78,7 +78,7 @@ impl EthersRepository {
     pub async fn apply_block_listener(&mut self, user_id: i32, provider: Provider<Ws>) {
         let block_subscriber = provider.clone();
 
-        let (mut tx, rx1) = broadcast(10); // canal com capacidade 10
+        let (tx, rx1) = tokio::sync::mpsc::channel(20);
         let tx_clone = tx.clone(); // Faz o primeiro clone
 
         spawn(async move {
@@ -88,7 +88,7 @@ impl EthersRepository {
                 .for_each(move |block| {
                     let tx_clone_inner = tx_clone.clone(); // Criamos o clone de tx_clone dentro do escopo do for_each
                     async move {
-                        tx_clone_inner.broadcast(block).await.unwrap();
+                        tx_clone_inner.send(block).await.unwrap();
                     }
                 })
                 .await;
