@@ -20,6 +20,7 @@ use crate::controllers::elastic_controller::ElasticController;
 use crate::services::elastic::get_erc20_contracts_service::GetErc20ContractsService;
 use crate::services::ethers::call_functions_service::CallFunctionsService;
 use crate::services::ethers::get_logs_service::GetLogsService;
+use crate::services::ethers::listen_contract_event_service::ListenContractEventsService;
 use crate::services::ethers::listen_deploy_erc20_contracts_service::ListenDeployErc20ContractsService;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use http_client::HttpClient;
@@ -49,14 +50,21 @@ async fn main() {
         ethers_repository.clone(),
         redis_repository.clone(),
     ));
+
+    let listen_contract_events_service =
+        Arc::new(ListenContractEventsService::new(ethers_repository.clone()));
+
     let get_erc20_contracts = Arc::new(GetErc20ContractsService::new(elastic_repository.clone()));
     let get_labels_service = Arc::new(GetLabelsService::new(elastic_repository.clone()));
+
     let get_transactions_service =
         Arc::new(GetTransactionsService::new(elastic_repository.clone()));
+
     let get_logs_service = Arc::new(GetLogsService::new(
         ethers_repository.clone(),
         elastic_repository.clone(),
     ));
+
     let listen_deploy_erc20_contracts_service = Arc::new(ListenDeployErc20ContractsService::new(
         ethers_repository.clone(),
         HttpClient::new(),
@@ -73,6 +81,7 @@ async fn main() {
         app = app.app_data(web::Data::new(get_labels_service.clone()));
         app = app.app_data(web::Data::new(get_transactions_service.clone()));
         app = app.app_data(web::Data::new(get_logs_service.clone()));
+        app = app.app_data(web::Data::new(listen_contract_events_service.clone()));
         app = app.app_data(web::Data::new(
             listen_deploy_erc20_contracts_service.clone(),
         ));

@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use crate::services::ethers::call_functions_service::CallFunctionsService;
 use crate::services::ethers::get_logs_service::GetLogsService;
+use crate::services::ethers::listen_contract_event_service::ListenContractEventsService;
 use crate::services::ethers::listen_deploy_erc20_contracts_service::ListenDeployErc20ContractsService;
 
 pub struct EthersController;
@@ -26,6 +27,13 @@ struct CallFunctionsCtrl {
 struct GetLogsCtrl {
     from_block: u64,
     to_block: u64
+}
+
+#[derive(Deserialize)]
+struct ListenContractEventsCtrl {
+    address: String,
+    webhook:String,
+    event_signature: String,
 }
 
 #[derive(Deserialize)]
@@ -55,6 +63,20 @@ impl EthersController {
         let to_block = request.to_block;
 
         service.exec(user_id,from_block,to_block).await;
+        HttpResponse::Ok()
+    }
+
+    pub async fn listen_contract_events_ctrl(
+        path: web::Path<PathParams>,
+        request: web::Json<ListenContractEventsCtrl>,
+        service: web::Data<Arc<ListenContractEventsService>>,
+    ) -> impl Responder {
+        let user_id = path.id;
+        let contract_address = request.address.clone();
+        let event_signature = request.event_signature.clone();
+        let webhook = request.webhook.clone();
+
+        service.exec(user_id,contract_address,event_signature,webhook).await;
         HttpResponse::Ok()
     }
 
@@ -104,6 +126,7 @@ impl EthersController {
         routes.insert(String::from("ethers/{id}/call_functions"), web::post().to(Self::call_functions_ctrl));
         routes.insert(String::from("ethers/{id}/get_logs"), web::post().to(Self::get_logs_ctrl));
         routes.insert(String::from("ethers/{id}/listen_deploy_erc20"), web::post().to(Self::listen_deploy_erc20_contracts_ctrl));
+        routes.insert(String::from("ethers/{id}/listen_contract_events"), web::post().to(Self::listen_contract_events_ctrl));
 
         routes
     }
