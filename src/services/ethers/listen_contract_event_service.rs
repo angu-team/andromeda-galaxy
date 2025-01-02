@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use crate::repositories::ethers_repository::EthersRepository;
 use ethers::abi::{Abi, Address};
 use ethers::middleware::Middleware;
 use ethers::prelude::{Filter, Provider, Ws, H256, StreamExt, Transaction};
 use std::sync::Arc;
+use ethers::types::H160;
 use log::Log;
 use tokio::sync::RwLock;
 use crate::http_client::HttpClient;
@@ -37,7 +39,7 @@ impl ListenContractEventsService {
 
     async fn send_transaction(
         webhook: String,
-        transaction: Transaction,
+        transaction: HashMap<H160, Transaction>,
     ) -> Result<(), reqwest::Error> {
         let client = HttpClient::new();
 
@@ -54,13 +56,16 @@ impl ListenContractEventsService {
     async fn process_event(
         provider: Arc<Provider<Ws>>,
         hash: H256,
-        webhook:String
+        webhook:String,
+        address: H160
     ){
         let transaction_data = provider.get_transaction(hash).await;
+        let mut contract_event = HashMap::new();
 
         match transaction_data {
             Ok(Some(value)) => {
-                Self::send_transaction(webhook, value).await.expect("TODO: panic message");
+                contract_event.insert(address, value);
+                Self::send_transaction(webhook, contract_event).await.expect("TODO: panic message");
             }
             Ok(None) => {
                 println!("Deu bom, mas tá vazio (None)!");
@@ -100,7 +105,7 @@ impl ListenContractEventsService {
 
             while let Some(log_result) = stream.next().await {
                 let hash = log_result.transaction_hash.unwrap();
-                Self::process_event(provider.clone(), hash, webhook.clone()).await;
+                Self::process_event(provider.clone(), hash, webhook.clone(),contract_address.clone()).await;
             }
         }
     }
