@@ -1,10 +1,10 @@
 use crate::http_client::HttpClient;
 use crate::repositories::ethers_repository::EthersRepository;
 use crate::utils::bytecode_utils::BytecodeUtils;
-use ethers::prelude::{Block, BlockNumber, Provider, StreamExt, Ws, H256};
+use ethers::prelude::{Block, BlockNumber, Provider, Ws, H256};
 use ethers::providers::Middleware;
-use ethers::types::{BlockId, Transaction};
-use std::sync::{Arc};
+use ethers::types::{BlockId, TransactionReceipt};
+use std::sync::Arc;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::RwLock;
 
@@ -35,7 +35,8 @@ impl ListenDeployErc20ContractsService {
     async fn process_block(
         provider: &Arc<Provider<Ws>>,
         block: Block<H256>,
-    ) -> Vec<Transaction> {
+    ) -> Vec<TransactionReceipt> {
+        // let block_id = BlockId::Number(BlockNumber::Number(block.number.unwrap()));
         let block_id = BlockId::Number(BlockNumber::Number(block.number.unwrap()));
         let block_data = provider
             .get_block_with_txs(block_id)
@@ -49,7 +50,8 @@ impl ListenDeployErc20ContractsService {
             let bytecode_is_deploy_erc20 =
                 BytecodeUtils::bytecode_is_deploy_erc20(transaction.input.to_string());
             if transaction.to.is_none() && bytecode_is_deploy_erc20 {
-                transactions.push(transaction);
+                let receipt = provider.get_transaction_receipt(transaction.hash).await.unwrap().expect("ERR ");
+                transactions.push(receipt);
             }
         }
 
@@ -58,7 +60,7 @@ impl ListenDeployErc20ContractsService {
 
     async fn send_transactions(
         webhook: String,
-        transactions: Vec<Transaction>,
+        transactions: Vec<TransactionReceipt>,
     ) -> Result<(), reqwest::Error> {
         let client = HttpClient::new();
 
